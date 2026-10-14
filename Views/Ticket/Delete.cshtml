@@ -1,0 +1,25 @@
+@model TicketTracking.Models.Ticket
+
+@{
+    ViewData["Title"] = "Talebi Sil";
+}
+
+<h2 class="text-danger">Destek Talebini Sil</h2>
+<h5>Bu talebi silmek istediğinizden emin misiniz?</h5>
+<hr />
+
+<div class="card col-md-6 mb-3">
+    <div class="card-body">
+        <p><strong>Başlık:</strong> @Model.Title</p>
+        <p><strong>Açıklama:</strong> @Model.Description</p>
+        <p><strong>Proje:</strong> @Model.Project?.Name</p>
+        <p><strong>Oluşturan:</strong> @Model.CreatedByUser?.Name</p>
+        <p><strong>Tarih:</strong> @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</p>
+    </div>
+</div>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Evet, Sil</button>
+    <a asp-action="Index" class="btn btn-secondary">Vazgeç</a>
+</form>

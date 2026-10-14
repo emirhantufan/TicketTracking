@@ -1,0 +1,50 @@
+@model IEnumerable<TicketTracking.Models.Ticket>
+
+@{
+    ViewData["Title"] = "Destek Talepleri";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Destek Talepleri (Tickets)</h2>
+    <a asp-action="Create" class="btn btn-primary">Yeni Talep Oluştur</a>
+</div>
+
+<table class="table table-bordered table-hover align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>Başlık</th>
+            <th>Proje</th>
+            <th>Öncelik</th>
+            <th>Durum</th>
+            <th>Oluşturan</th>
+            <th>Tarih</th>
+            <th style="width: 170px;">İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="7" class="text-center text-muted">Kayıtlı destek talebi bulunamadı.</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="fw-bold">@item.Title</td>
+                    <td><span class="badge bg-secondary">@item.Project?.Name</span></td>
+                    <td>@item.Priority</td>
+                    <td>@item.Status</td>
+                    <td>@item.CreatedByUser?.Name</td>
+                    <td>@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Düzenle</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Sil</a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
