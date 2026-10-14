@@ -1,0 +1,23 @@
+@model TicketTracking.Models.Project
+
+@{
+    ViewData["Title"] = "Projeyi Sil";
+}
+
+<h2 class="text-danger">Projeyi Sil</h2>
+<h5>Bu projeyi silmek istediğinizden emin misiniz?</h5>
+<hr />
+
+<div class="card col-md-6 mb-3">
+    <div class="card-body">
+        <p><strong>Proje Adı:</strong> @Model.Name</p>
+        <p><strong>Açıklama:</strong> @Model.Description</p>
+        <p><strong>Oluşturulma Tarihi:</strong> @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</p>
+    </div>
+</div>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Evet, Sil</button>
+    <a asp-action="Index" class="btn btn-secondary">Vazgeç</a>
+</form>

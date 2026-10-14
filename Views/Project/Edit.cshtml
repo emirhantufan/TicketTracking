@@ -1,0 +1,30 @@
+@model TicketTracking.Models.Project
+
+@{
+    ViewData["Title"] = "Projeyi Düzenle";
+}
+
+<h2>Projeyi Düzenle</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CreatedAt" />
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Proje Adı</label>
+                <input asp-for="Name" class="form-control" required />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Açıklama</label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-warning">Güncelle</button>
+            <a asp-action="Index" class="btn btn-secondary">İptal</a>
+        </form>
+    </div>
+</div>
