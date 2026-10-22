@@ -66,26 +66,29 @@
     </div>
 
     <!-- Sağ Taraf: Çözüm Notları ve Yorum Ekleme Formu -->
+    <!-- Sağ Taraf: Yorum Sistemi -->
     <div class="col-md-5">
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-light">
-                <h5 class="mb-0">Aktivite & Çözüm Notları</h5>
+                <h5 class="mb-0">Yorumlar</h5>
             </div>
             <div class="card-body">
+                <!-- Yorum Ekleme Formu -->
                 <form asp-action="AddComment" method="post" class="mb-4">
                     <input type="hidden" name="ticketId" value="@Model.Id" />
                     <div class="mb-2">
-                        <textarea name="commentText" class="form-control" rows="3" placeholder="Bu talebe bir not veya gelişme yazın..." required></textarea>
+                        <textarea name="commentText" class="form-control" rows="3" placeholder="Yorum yaz..." required></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-sm">Not Ekle</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Yorum Ekle</button>
                 </form>
 
                 <hr />
 
+                <!-- Eklenen Yorumların Listesi -->
                 <div class="comments-list">
                     @if (!Model.TicketComments.Any())
                     {
-                        <p class="text-muted text-center small mb-0">Henüz bir çözüm notu eklenmemiş.</p>
+                        <p class="text-muted text-center small mb-0">Henüz bir yorum yapılmamış.</p>
                     }
                     else
                     {
@@ -93,9 +96,12 @@
                         {
                             <div class="border rounded p-2 mb-2 bg-light">
                                 <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <!-- Kullanıcı -->
                                     <strong class="text-dark">@comment.CommentedByUser?.Name</strong>
+                                    <!-- Tarih -->
                                     <span>@comment.CommentedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
                                 </div>
+                                <!-- Yorum -->
                                 <p class="mb-0 small" style="white-space: pre-line;">@comment.CommentText</p>
                             </div>
                         }
