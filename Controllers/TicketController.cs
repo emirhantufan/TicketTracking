@@ -8,7 +8,7 @@ using TicketTracking.Models;
 
 namespace TicketTracking.Controllers
 {
-    [Authorize] // Sadece giriş yapmış kullanıcılar bilet işlemlerine erişebilir
+    [Authorize]
     public class TicketController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -18,7 +18,7 @@ namespace TicketTracking.Controllers
             _context = context;
         }
 
-        // 1. READ: Tüm biletleri ilişkili Proje ve Kullanıcı bilgileriyle listeleme
+        // 1. READ: Biletleri listeleme
         // GET: /Ticket
         public async Task<IActionResult> Index()
         {
@@ -31,7 +31,29 @@ namespace TicketTracking.Controllers
             return View(tickets);
         }
 
-        // 2. CREATE (Form): Proje seçim listesiyle boş form
+        // 2. DETAILS: Bilet detayı ve yorumlar
+        // GET: /Ticket/Details/5
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var ticket = await _context.Tickets
+                .Include(t => t.Project)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.TicketComments)
+                    .ThenInclude(c => c.CommentedByUser)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (ticket == null) return NotFound();
+
+            ticket.TicketComments = ticket.TicketComments
+                .OrderByDescending(c => c.CommentedAt)
+                .ToList();
+
+            return View(ticket);
+        }
+
+        // 3. CREATE (Form)
         // GET: /Ticket/Create
         public IActionResult Create()
         {
@@ -39,13 +61,12 @@ namespace TicketTracking.Controllers
             return View();
         }
 
-        // 2. CREATE (Kaydet): Giriş yapan kullanıcı ID'sini otomatik atar
+        // 3. CREATE (Kaydet)
         // POST: /Ticket/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Ticket ticket)
         {
-    // Oturum açan kullanıcının ID'sini alıyoruz
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!string.IsNullOrEmpty(currentUserId))
@@ -54,25 +75,23 @@ namespace TicketTracking.Controllers
                 ticket.CreatedAt = DateTime.UtcNow;
             }
 
-            // Formdan gelmeyen ilişkisel ve otomatik alanların validasyon hatalarını siliyoruz:
             ModelState.Remove(nameof(ticket.Project));
             ModelState.Remove(nameof(ticket.CreatedByUser));
             ModelState.Remove(nameof(ticket.CreatedByUserId));
-            ModelState.Remove("TicketComments");
-            ModelState.Remove("Comments");
+            ModelState.Remove(nameof(ticket.TicketComments));
 
-             if (ModelState.IsValid)
+            if (ModelState.IsValid)
             {
                 _context.Tickets.Add(ticket);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
 
-            // Eğer bir alan hala hata veriyorsa formu dropdown verisiyle birlikte geri bas
             ViewBag.ProjectId = new SelectList(_context.Projects, "Id", "Name", ticket.ProjectId);
             return View(ticket);
         }
-        // 3. UPDATE: Düzenleme formu
+
+        // 4. UPDATE (Form)
         // GET: /Ticket/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
@@ -81,43 +100,90 @@ namespace TicketTracking.Controllers
             var ticket = await _context.Tickets.FindAsync(id);
             if (ticket == null) return NotFound();
 
-            ViewBag.ProjectId = new SelectList(_context.Projects, "Id", "Name", ticket.ProjectId);
-            return View(ticket);
-        }
-
-        // 3. UPDATE (Kaydet)
-        // POST: /Ticket/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Ticket ticket)
-        {
-            if (id != ticket.Id) return NotFound();
-
-            ModelState.Remove(nameof(ticket.Project));
-            ModelState.Remove(nameof(ticket.CreatedByUser));
-
-            if (ModelState.IsValid)
+            // Güvenlik Kontrolü: Yalnızca kendi biletini düzenleyebilir
+            var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (ticket.CreatedByUserId != currentUserId)
             {
-                try
-                {
-                    _context.Tickets.Update(ticket);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!_context.Tickets.Any(e => e.Id == ticket.Id))
-                        return NotFound();
-                    else
-                        throw;
-                }
-                return RedirectToAction(nameof(Index));
+                return Forbid();
+            }
+
+            // Aşama 16 Kuralı: Kapatılmış bilet tekrar düzenlenemez
+            if (ticket.Status == TicketStatus.Kapatildi)
+            {
+                return RedirectToAction(nameof(Details), new { id = ticket.Id });
             }
 
             ViewBag.ProjectId = new SelectList(_context.Projects, "Id", "Name", ticket.ProjectId);
             return View(ticket);
         }
 
-        // 4. DELETE: Onay ekranı
+        // 4. UPDATE (Kaydet)
+        // POST: /Ticket/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Ticket model)
+        {
+            if (id != model.Id) return NotFound();
+
+            var existingTicket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
+            if (existingTicket == null) return NotFound();
+
+            var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (existingTicket.CreatedByUserId != currentUserId)
+            {
+                return Forbid();
+            }
+
+            // Aşama 16 Kuralı: Kapatılmış bilet düzenlenemez
+            if (existingTicket.Status == TicketStatus.Kapatildi)
+            {
+                return RedirectToAction(nameof(Details), new { id = existingTicket.Id });
+            }
+
+            ModelState.Remove(nameof(model.Project));
+            ModelState.Remove(nameof(model.CreatedByUser));
+            ModelState.Remove(nameof(model.TicketComments));
+
+            if (ModelState.IsValid)
+            {
+                existingTicket.Title = model.Title;
+                existingTicket.Description = model.Description;
+                existingTicket.Priority = model.Priority;
+                existingTicket.Type = model.Type;
+                existingTicket.Status = model.Status;
+                existingTicket.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Details), new { id = existingTicket.Id });
+            }
+
+            ViewBag.ProjectId = new SelectList(_context.Projects, "Id", "Name", model.ProjectId);
+            return View(model);
+        }
+
+        // 5. CLOSE (Talebi Kapat)
+        // POST: /Ticket/Close/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Close(int id)
+        {
+            var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
+            if (ticket == null) return NotFound();
+
+            var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (ticket.CreatedByUserId != currentUserId)
+            {
+                return Forbid();
+            }
+
+            ticket.Status = TicketStatus.Kapatildi;
+            ticket.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Details), new { id = ticket.Id });
+        }
+
+        // 6. DELETE (Onay Ekranı)
         // GET: /Ticket/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
@@ -130,10 +196,16 @@ namespace TicketTracking.Controllers
 
             if (ticket == null) return NotFound();
 
+            var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            if (ticket.CreatedByUserId != currentUserId)
+            {
+                return Forbid();
+            }
+
             return View(ticket);
         }
 
-        // 4. DELETE (Sil)
+        // 6. DELETE (Sil)
         // POST: /Ticket/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
@@ -142,11 +214,45 @@ namespace TicketTracking.Controllers
             var ticket = await _context.Tickets.FindAsync(id);
             if (ticket != null)
             {
+                var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+                if (ticket.CreatedByUserId != currentUserId)
+                {
+                    return Forbid();
+                }
+
                 _context.Tickets.Remove(ticket);
                 await _context.SaveChangesAsync();
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // 7. COMMENT (Yorum Ekleme)
+        // POST: /Ticket/AddComment
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddComment(int ticketId, string commentText)
+        {
+            if (string.IsNullOrWhiteSpace(commentText))
+            {
+                return RedirectToAction(nameof(Details), new { id = ticketId });
+            }
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (currentUserId == null) return Challenge();
+
+            var comment = new TicketComment
+            {
+                TicketId = ticketId,
+                CommentedByUserId = int.Parse(currentUserId),
+                CommentText = commentText.Trim(),
+                CommentedAt = DateTime.UtcNow
+            };
+
+            _context.TicketComments.Add(comment);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Details), new { id = ticketId });
         }
     }
 }

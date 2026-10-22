@@ -1,31 +1,43 @@
-using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TicketTracking.Data;
 using TicketTracking.Models;
 
-namespace TicketTracking.Controllers;
-
-public class HomeController : Controller
+namespace TicketTracking.Controllers
 {
-    private readonly ILogger<HomeController> _logger;
-
-    public HomeController(ILogger<HomeController> logger)
+    [Authorize]
+    public class HomeController : Controller
     {
-        _logger = logger;
-    }
+        private readonly ApplicationDbContext _context;
 
-    public IActionResult Index()
-    {
-        return View();
-    }
+        public HomeController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
+        public async Task<IActionResult> Index()
+        {
+            var model = new DashboardViewModel
+            {
+                TotalProjects = await _context.Projects.CountAsync(),
+                TotalTickets = await _context.Tickets.CountAsync(),
+                OpenTickets = await _context.Tickets.CountAsync(t => t.Status == TicketStatus.Acik),
+                ResolvedTickets = await _context.Tickets.CountAsync(t => t.Status == TicketStatus.Cozuldu),
+                RecentTickets = await _context.Tickets
+                    .Include(t => t.Project)
+                    .Include(t => t.CreatedByUser)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Take(5)
+                    .ToListAsync()
+            };
 
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(model);
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
     }
 }

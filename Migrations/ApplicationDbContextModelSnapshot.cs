@@ -64,10 +64,11 @@ namespace TicketTracking.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Priority")
-                        .HasColumnType("int");
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("ProjectId")
+                    b.Property<int>("ProjectId")
                         .HasColumnType("int");
 
                     b.Property<int>("Status")
@@ -77,8 +78,9 @@ namespace TicketTracking.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -163,7 +165,9 @@ namespace TicketTracking.Migrations
 
                     b.HasOne("TicketTracking.Models.Project", "Project")
                         .WithMany("Tickets")
-                        .HasForeignKey("ProjectId");
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("CreatedByUser");
 
@@ -179,7 +183,7 @@ namespace TicketTracking.Migrations
                         .IsRequired();
 
                     b.HasOne("TicketTracking.Models.Ticket", "Ticket")
-                        .WithMany("Comments")
+                        .WithMany("TicketComments")
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -196,7 +200,7 @@ namespace TicketTracking.Migrations
 
             modelBuilder.Entity("TicketTracking.Models.Ticket", b =>
                 {
-                    b.Navigation("Comments");
+                    b.Navigation("TicketComments");
                 });
 
             modelBuilder.Entity("TicketTracking.Models.User", b =>

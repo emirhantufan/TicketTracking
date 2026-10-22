@@ -1,8 +1,115 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model TicketTracking.Models.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Gösterge Paneli";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Gösterge Paneli</h2>
+    <a asp-controller="Ticket" asp-action="Create" class="btn btn-primary">+ Yeni Talep Aç</a>
+</div>
+
+<!-- İstatistik Kartları -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase fw-semibold">Toplam Proje</h6>
+                <h2 class="display-6 fw-bold mb-0">@Model.TotalProjects</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase fw-semibold">Toplam Talep</h6>
+                <h2 class="display-6 fw-bold mb-0">@Model.TotalTickets</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase fw-semibold">Açık Talepler</h6>
+                <h2 class="display-6 fw-bold mb-0">@Model.OpenTickets</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-uppercase fw-semibold">Çözülen Talepler</h6>
+                <h2 class="display-6 fw-bold mb-0">@Model.ResolvedTickets</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Son Açılan Talepler Tablosu -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0">Son Eklenen Talepler</h5>
+        <a asp-controller="Ticket" asp-action="Index" class="btn btn-outline-light btn-sm">Tümünü Gör</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Başlık</th>
+                        <th>Proje</th>
+                        <th>Öncelik</th>
+                        <th>Durum</th>
+                        <th>Açan Kişi</th>
+                        <th>Tarih</th>
+                        <th class="text-end">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.RecentTickets.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">Kayıtlı talep bulunmamaktadır.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var ticket in Model.RecentTickets)
+                        {
+                            <tr>
+                                <td>@ticket.Id</td>
+                                <td class="fw-semibold">@ticket.Title</td>
+                                <td><span class="badge bg-secondary">@ticket.Project?.Name</span></td>
+                                <td>@ticket.Priority</td>
+                                <td>
+                                    @if (ticket.Status == TicketTracking.Models.TicketStatus.Acik)
+                                    {
+                                        <span class="badge bg-danger">Açık</span>
+                                    }
+                                    else if (ticket.Status == TicketTracking.Models.TicketStatus.Inceleniyor)
+                                    {
+                                        <span class="badge bg-warning text-dark">İnceleniyor</span>
+                                    }
+                                    else if (ticket.Status == TicketTracking.Models.TicketStatus.Cozuldu)
+                                    {
+                                        <span class="badge bg-success">Çözüldü</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Kapatıldı</span>
+                                    }
+                                </td>
+                                <td>@ticket.CreatedByUser?.Name</td>
+                                <td>@ticket.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                                <td class="text-end">
+                                    <a asp-controller="Ticket" asp-action="Details" asp-route-id="@ticket.Id" class="btn btn-sm btn-outline-primary">Detay</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>

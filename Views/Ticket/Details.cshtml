@@ -1,0 +1,107 @@
+@model TicketTracking.Models.Ticket
+
+@{
+    ViewData["Title"] = "Talep Detayı - " + Model.Title;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Talep Detayı</h2>
+    <div class="d-flex align-items-center gap-2">
+        @if (Model.Status != TicketTracking.Models.TicketStatus.Kapatildi)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
+            
+            <form asp-action="Close" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Bu talebi kapatmak istediğinize emin misiniz? Kapatılan talepler tekrar düzenlenemez.');">
+                <button type="submit" class="btn btn-danger">Talebi Kapat</button>
+            </form>
+        }
+        else
+        {
+            <span class="badge bg-secondary py-2 px-3">Kapatıldı (Düzenlenemez)</span>
+        }
+        <a asp-action="Index" class="btn btn-secondary">Listeye Dön</a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Sol Taraf: Bilet Bilgileri -->
+    <div class="col-md-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">#@Model.Id - @Model.Title</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text fs-5">@Model.Description</p>
+                <hr />
+                <div class="row text-muted small">
+                    <div class="col-sm-6 mb-2">
+                        <strong>Bağlı Proje:</strong> <span class="badge bg-secondary">@Model.Project?.Name</span>
+                    </div>
+                    <div class="col-sm-6 mb-2">
+                        <strong>Açan Kişi:</strong> @Model.CreatedByUser?.Name
+                    </div>
+                    <div class="col-sm-6 mb-2">
+                        <strong>Tür:</strong> <span class="badge bg-secondary">@Model.Type</span>
+                    </div>
+                    <div class="col-sm-6 mb-2">
+                        <strong>Öncelik:</strong> @Model.Priority
+                    </div>
+                    <div class="col-sm-6 mb-2">
+                        <strong>Durum:</strong> @Model.Status
+                    </div>
+                    <div class="col-sm-12 mb-1">
+                        <strong>Kayıt Tarihi:</strong> @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                    </div>
+
+                    <!-- 4. ADIMDA EKLENECEK KOD BURASI: -->
+                    @if (Model.UpdatedAt.HasValue)
+                    {
+                        <div class="col-sm-12 text-muted">
+                            <strong>Son Güncelleme:</strong> @Model.UpdatedAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sağ Taraf: Çözüm Notları ve Yorum Ekleme Formu -->
+    <div class="col-md-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Aktivite & Çözüm Notları</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="AddComment" method="post" class="mb-4">
+                    <input type="hidden" name="ticketId" value="@Model.Id" />
+                    <div class="mb-2">
+                        <textarea name="commentText" class="form-control" rows="3" placeholder="Bu talebe bir not veya gelişme yazın..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Not Ekle</button>
+                </form>
+
+                <hr />
+
+                <div class="comments-list">
+                    @if (!Model.TicketComments.Any())
+                    {
+                        <p class="text-muted text-center small mb-0">Henüz bir çözüm notu eklenmemiş.</p>
+                    }
+                    else
+                    {
+                        @foreach (var comment in Model.TicketComments)
+                        {
+                            <div class="border rounded p-2 mb-2 bg-light">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <strong class="text-dark">@comment.CommentedByUser?.Name</strong>
+                                    <span>@comment.CommentedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
+                                </div>
+                                <p class="mb-0 small" style="white-space: pre-line;">@comment.CommentText</p>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

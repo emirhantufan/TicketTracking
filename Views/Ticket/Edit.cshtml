@@ -1,7 +1,7 @@
 @model TicketTracking.Models.Ticket
 
 @{
-    ViewData["Title"] = "Talebi Düzenle";
+    ViewData["Title"] = "Destek Talebini Düzenle";
 }
 
 <h2>Destek Talebini Düzenle</h2>
@@ -11,8 +11,6 @@
     <div class="col-md-6">
         <form asp-action="Edit" method="post">
             <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="CreatedByUserId" />
-            <input type="hidden" asp-for="CreatedAt" />
 
             <div class="mb-3">
                 <label asp-for="Title" class="form-label">Başlık</label>
@@ -25,8 +23,13 @@
             </div>
 
             <div class="mb-3">
-                <label asp-for="ProjectId" class="form-label">Bağlı Proje</label>
-                <select asp-for="ProjectId" class="form-select" asp-items="ViewBag.ProjectId" required></select>
+                <label asp-for="Type" class="form-label">Talep Türü</label>
+                <select asp-for="Type" class="form-select">
+                    <option value="Hata">Hata (Bug)</option>
+                    <option value="Geliştirme">Geliştirme (Feature)</option>
+                    <option value="İyileştirme">İyileştirme (Improvement)</option>
+                    <option value="Destek">Destek</option>
+                </select>
             </div>
 
             <div class="row">
@@ -50,8 +53,9 @@
                     </select>
                 </div>
             </div>
-            <button type="submit" class="btn btn-warning">Güncelle</button>
-            <a asp-action="Index" class="btn btn-secondary">İptal</a>
+
+            <button type="submit" class="btn btn-primary">Değişiklikleri Kaydet</button>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">İptal</a>
         </form>
     </div>
 </div>
