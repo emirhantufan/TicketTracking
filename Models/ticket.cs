@@ -29,6 +29,7 @@ namespace TicketTracking.Models
         public User? CreatedByUser { get; set; }
 
         public ICollection<TicketComment> TicketComments { get; set; } = new List<TicketComment>();
+        public ICollection<TicketAttachment> TicketAttachments { get; set; } = new List<TicketAttachment>();
 
     } // <--- Ticket sınıfının BİTİŞ parantezi
 

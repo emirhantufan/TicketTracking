@@ -1,12 +1,13 @@
-using Microsoft.AspNetCore.Authorization;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TicketTracking.Data;
 using TicketTracking.Models;
+using TicketTracking.ViewModels;
+using DashboardViewModel = TicketTracking.ViewModels.DashboardViewModel; // Belirsizliği çözen satır
 
 namespace TicketTracking.Controllers
 {
-    [Authorize]
     public class HomeController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -20,10 +21,15 @@ namespace TicketTracking.Controllers
         {
             var model = new DashboardViewModel
             {
-                TotalProjects = await _context.Projects.CountAsync(),
                 TotalTickets = await _context.Tickets.CountAsync(),
                 OpenTickets = await _context.Tickets.CountAsync(t => t.Status == TicketStatus.Acik),
-                ResolvedTickets = await _context.Tickets.CountAsync(t => t.Status == TicketStatus.Cozuldu),
+                ClosedTickets = await _context.Tickets.CountAsync(t => t.Status == TicketStatus.Kapatildi),
+                TotalProjects = await _context.Projects.CountAsync(),
+
+                BugCount = await _context.Tickets.CountAsync(t => t.Type == "Hata"),
+                RequestCount = await _context.Tickets.CountAsync(t => t.Type == "Talep"),
+                QuestionCount = await _context.Tickets.CountAsync(t => t.Type == "Soru"),
+
                 RecentTickets = await _context.Tickets
                     .Include(t => t.Project)
                     .Include(t => t.CreatedByUser)
@@ -38,6 +44,12 @@ namespace TicketTracking.Controllers
         public IActionResult Privacy()
         {
             return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
 }

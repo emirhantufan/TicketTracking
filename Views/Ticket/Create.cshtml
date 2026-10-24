@@ -15,7 +15,7 @@
             <div asp-validation-summary="All" class="alert alert-danger mb-3"></div>
         }
 
-        <form asp-action="Create" method="post">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
             <div class="mb-3">
                 <label asp-for="Title" class="form-label">Başlık</label>
                 <input asp-for="Title" class="form-control" placeholder="Örn: Login ekranında hata oluşuyor" />
@@ -54,6 +54,20 @@
                     <option value="Yuksek">Yüksek</option>
                 </select>
                 <span asp-validation-for="Priority" class="text-danger small"></span>
+            </div>
+
+            <!-- Aşama 23: Tamamen Türkçe Özel Dosya Seçim Alanı -->
+            <div class="mb-3">
+                <label class="form-label">Ek Dosya / Ekran Görüntüsü (Opsiyonel)</label>
+                <div class="input-group">
+                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('attachmentInput').click();">
+                        <i class="bi bi-paperclip me-1"></i> Dosya Seç
+                    </button>
+                    <input type="text" id="fileNameDisplay" class="form-control bg-white" placeholder="Dosya seçilmedi" readonly />
+                </div>
+                <!-- Arka planda çalışan gerçek dosya girdisi -->
+                <input type="file" id="attachmentInput" name="attachment" class="d-none" onchange="document.getElementById('fileNameDisplay').value = this.files[0] ? this.files[0].name : 'Dosya seçilmedi';" />
+                <div class="form-text">Desteklenen: .png, .jpg, .log, .pdf vb.</div>
             </div>
 
             <button type="submit" class="btn btn-primary">Talebi Oluştur</button>

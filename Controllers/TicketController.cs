@@ -12,10 +12,11 @@ namespace TicketTracking.Controllers
     public class TicketController : Controller
     {
         private readonly ApplicationDbContext _context;
-
-        public TicketController(ApplicationDbContext context)
+        private readonly IWebHostEnvironment _environment;
+        public TicketController(ApplicationDbContext context, IWebHostEnvironment environment)
         {
             _context = context;
+            _environment = environment;
         }
 
         // 1. READ & FILTER: Biletleri listeleme ve filtreleme
@@ -73,6 +74,7 @@ namespace TicketTracking.Controllers
             var ticket = await _context.Tickets
                 .Include(t => t.Project)
                 .Include(t => t.CreatedByUser)
+                .Include(t => t.TicketAttachments)
                 .Include(t => t.TicketComments)
                     .ThenInclude(c => c.CommentedByUser)
                 .FirstOrDefaultAsync(m => m.Id == id);
@@ -85,7 +87,6 @@ namespace TicketTracking.Controllers
 
             return View(ticket);
         }
-
         // 3. CREATE (Form)
         // GET: /Ticket/Create
         public IActionResult Create()
@@ -98,7 +99,7 @@ namespace TicketTracking.Controllers
         // POST: /Ticket/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Ticket ticket)
+        public async Task<IActionResult> Create(Ticket ticket, IFormFile? attachment)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -112,9 +113,35 @@ namespace TicketTracking.Controllers
             ModelState.Remove(nameof(ticket.CreatedByUser));
             ModelState.Remove(nameof(ticket.CreatedByUserId));
             ModelState.Remove(nameof(ticket.TicketComments));
+            ModelState.Remove(nameof(ticket.TicketAttachments));
 
             if (ModelState.IsValid)
             {
+                // Dosya Yükleme Mantığı (Aşama 23)
+                if (attachment != null && attachment.Length > 0)
+                {
+                    var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+                    if (!Directory.Exists(uploadsFolder))
+                    {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+
+                    var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(attachment.FileName)}";
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await attachment.CopyToAsync(fileStream);
+                    }
+
+                    ticket.TicketAttachments.Add(new TicketAttachment
+                    {
+                        FileName = attachment.FileName,
+                        FilePath = $"/uploads/{uniqueFileName}",
+                        UploadedAt = DateTime.UtcNow
+                    });
+                }
+
                 _context.Tickets.Add(ticket);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));

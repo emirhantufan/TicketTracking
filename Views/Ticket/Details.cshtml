@@ -57,7 +57,23 @@
                     <div class="col-sm-12 mb-1">
                         <strong>Kayıt Tarihi:</strong> @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
                     </div>
-
+                    <!-- Aşama 23: Ekli Dosyalar -->
+                    @if (Model.TicketAttachments != null && Model.TicketAttachments.Any())
+                    {
+                        <hr />
+                        <h6 class="fw-bold mb-2">Ekli Dosyalar</h6>
+                        <div class="list-group">
+                            @foreach (var file in Model.TicketAttachments)
+                            {
+                                <a href="@file.FilePath" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2">
+                                    <span class="text-truncate">
+                                        <i class="bi bi-paperclip me-2 text-primary"></i>@file.FileName
+                                    </span>
+                                    <span class="badge bg-light text-dark border">Görüntüle / İndir</span>
+                                </a>
+                            }
+                        </div>
+                    }
                     <!-- 4. ADIMDA EKLENECEK KOD BURASI: -->
                     @if (Model.UpdatedAt.HasValue)
                     {

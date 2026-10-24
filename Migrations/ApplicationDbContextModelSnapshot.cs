@@ -96,6 +96,35 @@ namespace TicketTracking.Migrations
                     b.ToTable("Tickets");
                 });
 
+            modelBuilder.Entity("TicketTracking.Models.TicketAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("TicketAttachments");
+                });
+
             modelBuilder.Entity("TicketTracking.Models.TicketComment", b =>
                 {
                     b.Property<int>("Id")
@@ -176,6 +205,17 @@ namespace TicketTracking.Migrations
                     b.Navigation("Project");
                 });
 
+            modelBuilder.Entity("TicketTracking.Models.TicketAttachment", b =>
+                {
+                    b.HasOne("TicketTracking.Models.Ticket", "Ticket")
+                        .WithMany("TicketAttachments")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
+                });
+
             modelBuilder.Entity("TicketTracking.Models.TicketComment", b =>
                 {
                     b.HasOne("TicketTracking.Models.User", "CommentedByUser")
@@ -202,6 +242,8 @@ namespace TicketTracking.Migrations
 
             modelBuilder.Entity("TicketTracking.Models.Ticket", b =>
                 {
+                    b.Navigation("TicketAttachments");
+
                     b.Navigation("TicketComments");
                 });
 
