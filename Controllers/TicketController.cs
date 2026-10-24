@@ -18,19 +18,52 @@ namespace TicketTracking.Controllers
             _context = context;
         }
 
-        // 1. READ: Biletleri listeleme
+        // 1. READ & FILTER: Biletleri listeleme ve filtreleme
         // GET: /Ticket
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? type, string? priority, TicketStatus? status, int? projectId)
         {
-            var tickets = await _context.Tickets
+            var query = _context.Tickets
                 .Include(t => t.Project)
                 .Include(t => t.CreatedByUser)
+                .AsQueryable();
+
+            // 1. Tür Filtresi (Hata, Talep, Soru)
+            if (!string.IsNullOrWhiteSpace(type))
+            {
+                query = query.Where(t => t.Type == type);
+            }
+
+            // 2. Öncelik Filtresi (Dusuk, Orta, Yuksek)
+            if (!string.IsNullOrWhiteSpace(priority))
+            {
+                query = query.Where(t => t.Priority == priority);
+            }
+
+            // 3. Durum Filtresi (Acik, Kapatildi)
+            if (status.HasValue)
+            {
+                query = query.Where(t => t.Status == status.Value);
+            }
+
+            // 4. Proje Filtresi
+            if (projectId.HasValue)
+            {
+                query = query.Where(t => t.ProjectId == projectId.Value);
+            }
+
+            var tickets = await query
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
-            return View(tickets);
-        }
+            // Seçimlerin sayfada seçili kalması ve proje listesinin yüklenmesi
+            ViewBag.Projects = new SelectList(await _context.Projects.ToListAsync(), "Id", "Name", projectId);
+            ViewBag.SelectedType = type;
+            ViewBag.SelectedPriority = priority;
+            ViewBag.SelectedStatus = status;
+            ViewBag.SelectedProjectId = projectId;
 
+            return View(tickets);
+        }  
         // 2. DETAILS: Bilet detayı ve yorumlar
         // GET: /Ticket/Details/5
         public async Task<IActionResult> Details(int? id)

@@ -1,8 +1,11 @@
 @model IEnumerable<TicketTracking.Models.Ticket>
+@using System.Security.Claims
 
 @{
     ViewData["Title"] = "Destek Talepleri";
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
+
 @if (TempData["ErrorMessage"] != null)
 {
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -11,48 +14,169 @@
     </div>
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Destek Talepleri (Tickets)</h2>
-    <a asp-action="Create" class="btn btn-primary">Yeni Talep Oluştur</a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Destek Talepleri</h2>
+        <p class="text-muted small mb-0">Tüm hata bildirimlerini ve geliştirme taleplerini buradan takip edebilirsiniz.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Yeni Talep Oluştur
+    </a>
 </div>
 
-<table class="table table-bordered table-hover align-middle">
-    <thead class="table-dark">
-        <tr>
-            <th>Başlık</th>
-            <th>Proje</th>
-            <th>Öncelik</th>
-            <th>Durum</th>
-            <th>Oluşturan</th>
-            <th>Tarih</th>
-            <th style="width: 170px;">İşlemler</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (!Model.Any())
-        {
-            <tr>
-                <td colspan="7" class="text-center text-muted">Kayıtlı destek talebi bulunamadı.</td>
-            </tr>
-        }
-        else
-        {
-            @foreach (var item in Model)
-            {
+<!-- Aşama 21: Dinamik Filtreleme Kartı -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body bg-white rounded">
+        <form method="get" asp-action="Index" class="row g-2 align-items-end">
+            <!-- Proje Filtresi -->
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted">Proje</label>
+                <select name="projectId" class="form-select form-select-sm" asp-items="ViewBag.Projects">
+                    <option value="">Tüm Projeler</option>
+                </select>
+            </div>
+
+            <!-- Tür Filtresi -->
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Tür</label>
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">Tüm Türler</option>
+                    <!option value="Hata" @(ViewBag.SelectedType == "Hata" ? "selected" : "")>Hata</!option>
+                    <!option value="Talep" @(ViewBag.SelectedType == "Talep" ? "selected" : "")>Talep</!option>
+                    <!option value="Soru" @(ViewBag.SelectedType == "Soru" ? "selected" : "")>Soru</!option>
+                </select>
+            </div>
+
+            <!-- Öncelik Filtresi -->
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Öncelik</label>
+                <select name="priority" class="form-select form-select-sm">
+                    <option value="">Tüm Öncelikler</option>
+                    <!option value="Dusuk" @(ViewBag.SelectedPriority == "Dusuk" ? "selected" : "")>Düşük</!option>
+                    <!option value="Orta" @(ViewBag.SelectedPriority == "Orta" ? "selected" : "")>Orta</!option>
+                    <!option value="Yuksek" @(ViewBag.SelectedPriority == "Yuksek" ? "selected" : "")>Yüksek</!option>
+                </select>
+            </div>
+
+            <!-- Durum Filtresi -->
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Durum</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Tüm Durumlar</option>
+                    <!option value="Acik" @(ViewBag.SelectedStatus?.ToString() == "Acik" ? "selected" : "")>Açık</!option>
+                    <!option value="Kapatildi" @(ViewBag.SelectedStatus?.ToString() == "Kapatildi" ? "selected" : "")>Kapatıldı</!option>
+                </select>
+            </div>
+
+            <!-- Butonlar -->
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="bi bi-funnel me-1"></i> Filtrele
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="Filtreleri Temizle">
+                    Sıfırla
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bilet Listesi Tablosu -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
                 <tr>
-                    <td class="fw-bold">@item.Title</td>
-                    <td><span class="badge bg-secondary">@item.Project?.Name</span></td>
-                    <td>@item.Priority</td>
-                    <td>@item.Status</td>
-                    <td>@item.CreatedByUser?.Name</td>
-                    <td>@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Düzenle</a>
-                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Sil</a>
-                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info text-white">Detay</a>
-                    </td>
+                    <th scope="col" style="width: 70px;">#ID</th>
+                    <th scope="col">Başlık</th>
+                    <th scope="col">Proje</th>
+                    <th scope="col">Tür</th>
+                    <th scope="col">Öncelik</th>
+                    <th scope="col">Durum</th>
+                    <th scope="col">Açan Kişi</th>
+                    <th scope="col">Tarih</th>
+                    <th scope="col" class="text-end" style="width: 140px;">İşlemler</th>
                 </tr>
-            }
-        }
-    </tbody>
-</table>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            Seçilen filtrelere uygun destek talebi bulunamadı.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var item in Model)
+                    {
+                        var isOwner = currentUserId != null && item.CreatedByUserId == int.Parse(currentUserId);
+                        <tr>
+                            <td class="fw-bold text-muted">#@item.Id</td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none fw-semibold text-dark">
+                                    @item.Title
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">@(item.Project?.Name ?? "Genel")</span>
+                            </td>
+                            <td>
+                                @if (item.Type == "Hata")
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Hata</span>
+                                }
+                                else if (item.Type == "Talep")
+                                {
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Talep</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">@item.Type</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.Priority == "Yuksek")
+                                {
+                                    <span class="badge bg-danger">Yüksek</span>
+                                }
+                                else if (item.Priority == "Orta")
+                                {
+                                    <span class="badge bg-warning text-dark">Orta</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Düşük</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.Status == TicketTracking.Models.TicketStatus.Kapatildi)
+                                {
+                                    <span class="badge bg-secondary">Kapatıldı</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Açık</span>
+                                }
+                            </td>
+                            <td class="small">@item.CreatedByUser?.Name</td>
+                            <td class="small text-muted">@item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary" title="Detay">
+                                    Görüntüle
+                                </a>
+                                @if (isOwner && item.Status != TicketTracking.Models.TicketStatus.Kapatildi)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary ms-1" title="Düzenle">
+                                        Düzenle
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
