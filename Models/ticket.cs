@@ -1,9 +1,17 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace TicketTracking.Models
 {
     public class Ticket
     {
         public int Id { get; set; }
+        // Aşama 19: Başlık doğrulamaları
+        [Required(ErrorMessage = "Başlık zorunludur.")]
+        [StringLength(200, ErrorMessage = "Başlık maksimum 200 karakter olabilir.")]
         public string Title { get; set; } = string.Empty;
+        // Aşama 19: Açıklama doğrulamaları
+        [Required(ErrorMessage = "Açıklama zorunludur.")]
+        [StringLength(2000, ErrorMessage = "Açıklama maksimum 2000 karakter olabilir.")]
         public string Description { get; set; } = string.Empty;
         public string Type { get; set; } = "Hata";
         public string Priority { get; set; } = "Orta";

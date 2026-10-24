@@ -1,4 +1,9 @@
 @model TicketTracking.Models.Ticket
+@using System.Security.Claims
+@{
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var isOwner = currentUserId != null && Model.CreatedByUserId == int.Parse(currentUserId);
+}
 
 @{
     ViewData["Title"] = "Talep Detayı - " + Model.Title;

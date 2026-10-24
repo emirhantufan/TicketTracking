@@ -100,16 +100,18 @@ namespace TicketTracking.Controllers
             var ticket = await _context.Tickets.FindAsync(id);
             if (ticket == null) return NotFound();
 
-            // Güvenlik Kontrolü: Yalnızca kendi biletini düzenleyebilir
+            // AŞAMA 18: Yetki Kontrolü (Yalnızca kendi biletini açabilir)
             var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             if (ticket.CreatedByUserId != currentUserId)
             {
-                return Forbid();
+                TempData["ErrorMessage"] = "Bu işlem için yetkiniz yok! Yalnızca kendi açtığınız talepleri düzenleyebilirsiniz.";
+                return RedirectToAction(nameof(Index));
             }
 
-            // Aşama 16 Kuralı: Kapatılmış bilet tekrar düzenlenemez
+            // AŞAMA 16: Kapatılmış bilet tekrar düzenlenemez
             if (ticket.Status == TicketStatus.Kapatildi)
             {
+                TempData["ErrorMessage"] = "Kapatılmış bir talep tekrar düzenlenemez.";
                 return RedirectToAction(nameof(Details), new { id = ticket.Id });
             }
 
@@ -128,15 +130,18 @@ namespace TicketTracking.Controllers
             var existingTicket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
             if (existingTicket == null) return NotFound();
 
+            // AŞAMA 18: POST seviyesinde yetki kontrolü
             var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             if (existingTicket.CreatedByUserId != currentUserId)
             {
-                return Forbid();
+                TempData["ErrorMessage"] = "Yetkisiz işlem! Yalnızca kendi açtığınız talepleri güncelleyebilirsiniz.";
+                return RedirectToAction(nameof(Index));
             }
 
-            // Aşama 16 Kuralı: Kapatılmış bilet düzenlenemez
+            // AŞAMA 16: Kapatılmış bilet güncellenemez
             if (existingTicket.Status == TicketStatus.Kapatildi)
             {
+                TempData["ErrorMessage"] = "Kapatılmış bir talep güncellenemez.";
                 return RedirectToAction(nameof(Details), new { id = existingTicket.Id });
             }
 
@@ -170,10 +175,12 @@ namespace TicketTracking.Controllers
             var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
             if (ticket == null) return NotFound();
 
+            // AŞAMA 18: Yetki Kontrolü
             var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             if (ticket.CreatedByUserId != currentUserId)
             {
-                return Forbid();
+                TempData["ErrorMessage"] = "Yalnızca kendi açtığınız talepleri kapatabilirsiniz.";
+                return RedirectToAction(nameof(Index));
             }
 
             ticket.Status = TicketStatus.Kapatildi;
@@ -196,10 +203,12 @@ namespace TicketTracking.Controllers
 
             if (ticket == null) return NotFound();
 
+            // AŞAMA 18: Yetki Kontrolü
             var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             if (ticket.CreatedByUserId != currentUserId)
             {
-                return Forbid();
+                TempData["ErrorMessage"] = "Yalnızca kendi açtığınız talepleri silebilirsiniz.";
+                return RedirectToAction(nameof(Index));
             }
 
             return View(ticket);
@@ -214,10 +223,12 @@ namespace TicketTracking.Controllers
             var ticket = await _context.Tickets.FindAsync(id);
             if (ticket != null)
             {
+                // AŞAMA 18: Yetki Kontrolü
                 var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
                 if (ticket.CreatedByUserId != currentUserId)
                 {
-                    return Forbid();
+                    TempData["ErrorMessage"] = "Yalnızca kendi açtığınız talepleri silebilirsiniz.";
+                    return RedirectToAction(nameof(Index));
                 }
 
                 _context.Tickets.Remove(ticket);
